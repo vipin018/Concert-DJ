@@ -3,6 +3,21 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import GUI from 'lil-gui';
 
+// Loading manager
+const loadingScreen = document.getElementById('loading');
+const manager = new THREE.LoadingManager();
+
+manager.onLoad = () => {
+  loadingScreen.style.display = 'none';
+  console.log("All assets loaded.");
+};
+
+manager.onError = (url) => console.error(`Error loading ${url}`);
+
+const loader = new GLTFLoader(manager);
+const audioLoader = new THREE.AudioLoader(manager);
+
+
 // Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a1f);
@@ -255,3 +270,5 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+document.querySelector('#loading').style.display = 'none';
