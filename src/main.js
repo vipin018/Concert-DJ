@@ -3,21 +3,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import GUI from 'lil-gui';
 
-// Loading manager
-const loadingScreen = document.getElementById('loading');
-const manager = new THREE.LoadingManager();
-
-manager.onLoad = () => {
-  loadingScreen.style.display = 'none';
-  console.log("All assets loaded.");
-};
-
-manager.onError = (url) => console.error(`Error loading ${url}`);
-
-const loader = new GLTFLoader(manager);
-const audioLoader = new THREE.AudioLoader(manager);
-
-
 // Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a1f);
@@ -73,8 +58,22 @@ flashLight.castShadow = true;
 flashLight.position.set(2, 8, 0);
 scene.add(flashLight);
 
-// Load Models
-const loader = new GLTFLoader();
+// Loading manager
+const loadingScreen = document.getElementById('loading');
+const manager = new THREE.LoadingManager();
+
+manager.onLoad = () => {
+  loadingScreen.style.display = 'none';
+  console.log("All assets loaded.");
+};
+
+manager.onError = (url) => console.error(`Error loading ${url}`);
+
+// Loaders
+const loader = new GLTFLoader(manager);
+const audioLoader = new THREE.AudioLoader(manager);
+
+// Models
 let mixer, djMixer;
 
 loader.load('./animated_model/scene.gltf', (gltf) => {
@@ -114,10 +113,9 @@ loader.load('./monkey_dj_animated/scene.gltf', (gltf) => {
   }
 });
 
-// 🎧 Audio Setup
+// Audio
 const listener = new THREE.AudioListener();
 camera.add(listener);
-const audioLoader = new THREE.AudioLoader();
 
 const tracks = {
   music1: new THREE.Audio(listener),
@@ -149,6 +147,7 @@ audioLoader.load('./audio/music2.mp3', buffer => {
   tracks.music2.setVolume(0.6);
 });
 
+// Concert Controls
 let concertActive = false;
 
 function startConcert() {
@@ -205,14 +204,14 @@ function fadeInRandomCrowd() {
   };
 }
 
-// 🎛 GUI
+// GUI
 const gui = new GUI();
 const controlsFolder = gui.addFolder('🎛 Concert Controls');
 controlsFolder.add({ start: startConcert }, 'start').name('▶ Start Concert');
 controlsFolder.add({ stop: stopConcert }, 'stop').name('⏹ Stop Concert');
 controlsFolder.close();
 
-// 🎥 Camera + Lights Animation
+// Animation
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
@@ -222,7 +221,7 @@ function animate() {
   mixer?.update(delta);
   djMixer?.update(delta);
 
-  // Dynamic lights
+  // Lights
   light1.position.x = Math.sin(time * 1.5) * 10;
   light1.position.z = Math.tan(time * 1.5) * 10;
   light2.position.x = Math.sin(time * 1.5) * 10;
@@ -241,7 +240,6 @@ function animate() {
   aboveHeadSpotlight.position.x = Math.sin(time * 0.5);
   aboveHeadSpotlight.position.z = Math.cos(time * 0.5);
 
-  // 🎥 Cinematic Drone Style Camera
   const droneRadius = 8;
   const height = 2.5 + Math.sin(time * 0.5) * 1.5;
   const zoomIn = 3 + Math.sin(time * 0.8) * 1;
@@ -270,5 +268,3 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-document.querySelector('#loading').style.display = 'none';
