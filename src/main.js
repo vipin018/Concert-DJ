@@ -29,9 +29,7 @@ stage.scale.set(1.5, 1, 2.5);
 stage.receiveShadow = true;
 scene.add(stage);
 
-
-
-//Lights
+// Lights
 const createSpot = (color, pos) => {
   const light = new THREE.SpotLight(color, 80, 30, Math.PI / 18, 0.5, 1);
   light.castShadow = true;
@@ -59,26 +57,19 @@ overheadSpot.target.position.set(0, 0, -1);
 overheadSpot.castShadow = true;
 scene.add(overheadSpot, overheadSpot.target);
 
-// Models
+// Loaders
 const loader = new GLTFLoader();
 
 // Mixers
 let mixer, djMixer, dancer1Mixer, dancer2Mixer;
 
-// ✅ Reusable Load Model Function
-const loadModel = (
-  path,
-  scale = [1, 1, 1],
-  position = [0, 0, 0],
-  parent = scene,
-  callback = () => {},
-  animationIndex = null
-) => {
+// Model Loader
+const loadModel = (path, scale = [1, 1, 1], position = [0, 0, 0], parent = scene, callback = () => {}, animationIndex = null) => {
   loader.load(path, (gltf) => {
     const model = gltf.scene;
     model.scale.set(...scale);
     model.position.set(...position);
-    model.traverse((child) => {
+    model.traverse(child => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
@@ -88,21 +79,17 @@ const loadModel = (
 
     if (gltf.animations.length) {
       const mix = new THREE.AnimationMixer(model);
-
       if (animationIndex !== null && gltf.animations[animationIndex]) {
         mix.clipAction(gltf.animations[animationIndex]).play();
       } else {
         gltf.animations.forEach((clip) => mix.clipAction(clip).play());
       }
-
       callback(mix);
     }
   });
 };
 
-
-
-// 🔊 DJ & Main Model
+// Load Main Scene Models
 loadModel('./animated_model/scene.gltf', [2.2, 2.2, 2.2], [0, -2, 2], scene, m => mixer = m);
 
 const dj = new THREE.Object3D();
@@ -110,24 +97,19 @@ dj.position.set(0, -2, -2.5);
 scene.add(dj);
 loadModel('./monkey_dj_animated/scene.gltf', [1.8, 1.8, 1.8], [0, 0, 0], dj, m => djMixer = m);
 
-// 🕺 Dancers on stage
+// Load Dancers
 const dancers = new THREE.Object3D();
 dancers.position.set(0, -2, 2);
 scene.add(dancers);
 
+loadModel('./man1.glb', [0.8, 0.8, 0.8], [-2, 0, -3], dancers, m => dancer1Mixer = m, 3);
+loadModel('./man2.glb', [0.8, 0.8, 0.8], [3, 0, 2], dancers, m => dancer2Mixer = m, 0);
 
-loadModel('./man1.glb', [0.8, 0.8, 0.8], [-2, 0, -3], dancers, (m) => dancer1Mixer = m, 3); // wave
-loadModel('./man2.glb', [0.8, 0.8, 0.8], [3, 0, 2], dancers, (m) => dancer2Mixer = m, 0); // jump
-
-
-
-
-
-// Audio Setup
+// Audio
 const listener = new THREE.AudioListener();
 camera.add(listener);
-const audioLoader = new THREE.AudioLoader();
 
+const audioLoader = new THREE.AudioLoader();
 const tracks = {
   music1: new THREE.Audio(listener),
   music2: new THREE.Audio(listener),
@@ -193,18 +175,17 @@ function fadeInCrowd() {
   };
 }
 
-
-
-// GUI
+// GUI Controls
 const gui = new GUI();
 const folder = gui.addFolder('🎛 Concert Controls');
 folder.add({ start: startConcert }, 'start').name('▶ Start Concert');
 folder.add({ stop: stopConcert }, 'stop').name('⏹ Stop Concert');
 folder.close();
 
-// Animation
+// Animation Loop
 const clock = new THREE.Clock();
 let colorTimer = 0;
+
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
@@ -215,8 +196,7 @@ function animate() {
   dancer1Mixer?.update(delta);
   dancer2Mixer?.update(delta);
 
-
-  // Animate lights
+  // Animate spotlights
   const [l1, l2, l3, l4] = spotLights;
   l1.position.x = Math.sin(time * 1.5) * 10;
   l1.position.z = Math.cos(time * 1.5) * 10;
@@ -237,31 +217,25 @@ function animate() {
   overheadSpot.position.x = Math.sin(time * 0.5);
   overheadSpot.position.z = Math.cos(time * 0.5);
 
-  // Camera
-  const concertOrbit = {
-    radius: 4,
-    height: 2.8,
-    speed: 0.3,
-  };
-  
+  // Cinematic Camera
+  const concertOrbit = { radius: 4, height: 2.8, speed: 0.3 };
   const idleCinematicPath = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-5, 3, 6),
     new THREE.Vector3(0, 4, 2),
     new THREE.Vector3(2, 3, -1),
     new THREE.Vector3(-2, 2.5, -4),
-    new THREE.Vector3(-5, 3, 6), // loop
+    new THREE.Vector3(-5, 3, 6),
   ]);
-  
+
   if (tracks.music1.isPlaying || tracks.music2.isPlaying) {
-    // Cinematic orbit with slow dolly & sway
     const angle = time * concertOrbit.speed;
     const x = concertOrbit.radius * Math.cos(angle);
     const z = concertOrbit.radius * Math.sin(angle);
-    const y = concertOrbit.height + Math.sin(time * 0.4) * 0.1; // soft vertical sway
-  
+    const y = concertOrbit.height + Math.sin(time * 0.4) * 0.1;
+
     const targetPos = new THREE.Vector3(x, y, z);
     camera.position.lerp(targetPos, 0.04);
-  
+
     const focusPoint = new THREE.Vector3(
       0 + Math.sin(time * 0.2) * 0.1,
       1 + Math.sin(time * 0.3) * 0.1,
@@ -269,21 +243,17 @@ function animate() {
     );
     camera.lookAt(focusPoint);
   } else {
-    // Idle: smooth drone-like cinematic path loop
     const loopDuration = 45;
     const t = (time % loopDuration) / loopDuration;
     const position = idleCinematicPath.getPointAt(t);
     const lookAhead = idleCinematicPath.getPointAt((t + 0.01) % 1);
-  
+
     camera.position.lerp(position, 0.03);
     camera.lookAt(lookAhead);
   }
-  
- 
+
   controls.update();
   renderer.render(scene, camera);
-
-  // Update crowd volume
 }
 animate();
 
@@ -294,4 +264,4 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-document.querySelector('#loading').style.display = 'none';
+document.querySelector('#loading')?.style?.display = 'none';
